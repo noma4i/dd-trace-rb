@@ -19,6 +19,7 @@ require 'ddtrace/contrib/dalli/patcher'
 require 'ddtrace/contrib/resque/patcher'
 require 'ddtrace/contrib/racecar/patcher'
 require 'ddtrace/contrib/sidekiq/patcher'
+require 'ddtrace/contrib/graphql/patcher'
 
 module Datadog
   # Monkey is used for monkey-patching 3rd party libs.
