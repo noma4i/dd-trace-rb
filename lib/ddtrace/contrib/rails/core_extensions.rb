@@ -141,11 +141,26 @@ module Datadog
 
     def patch_action_controller
       patch_process_action
+      patch_callbacks
     end
 
     def patch_process_action
       ::ActionController::Instrumentation.class_eval do
+        # [:before, :after, :around].each do |callback|
+        #   define_method "#{callback}_action_with_datadog" do |*names, &blk|
+        #     # Wrap original callbacks with tracing
+        #   end
+        #   alias_method :"#{callback}_filter_with_datadog", :"#{callback}_action_with_datadog"
+
+        #   # *_action is the same as append_*_action
+        #   alias_method :"append_#{callback}_action_with_datadog", :"#{callback}_action_with_datadog"
+        #   alias_method :"append_#{callback}_filter_with_datadog", :"#{callback}_action_with_datadog"
+        # end
+
         def process_action_with_datadog(*args)
+          # self.class.send(:get_callbacks, :process_action)
+          # binding.pry
+
           # mutable payload with a tracing context that is used in two different
           # signals; it propagates the request span so that it can be finished
           # no matter what
@@ -177,6 +192,35 @@ module Datadog
 
         alias_method :process_action_without_datadog, :process_action
         alias_method :process_action, :process_action_with_datadog
+      end
+    end
+
+    def patch_callbacks
+      # ::ActionController::Base.include(Datadog::Contrib::Rails::ActionController::Callbacks)
+      ::ActionController::Base.class_eval do
+        # include Datadog::Contrib::Rails::ActionController::Callbacks
+        def _process_action_callbacks
+          self.class._process_action_callbacks.tap do |callbacks|
+            unless callbacks.class < Datadog::Contrib::Rails::ActiveSupport::Callbacks::CallbackChain
+              callbacks.extend(Datadog::Contrib::Rails::ActiveSupport::Callbacks::CallbackChain)
+            end
+          end
+        end
+
+        # def self.get_callbacks(name)
+        #   binding.pry
+        #   super
+        # end
+
+        # def self.set_callback(name, *filter_list, &block)
+        #   binding.pry
+        #   super
+        # end
+
+        # def self.set_callbacks(name, callbacks)
+        #   binding.pry
+        #   super
+        # end
       end
     end
   end
